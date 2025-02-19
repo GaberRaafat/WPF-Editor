@@ -1,0 +1,177 @@
+﻿<Window
+    x:Class="Editor.View.ProjectSummaryView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:conv="clr-namespace:Editor.Utility"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Editor.View"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:view="clr-namespace:Editor.View"
+    xmlns:viewModels="clr-namespace:Editor.ViewModel"
+    Title="ProjectSummaryView"
+    Width="800"
+    Height="450"
+    Background="#6e7179"
+    ResizeMode="CanResizeWithGrip"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <Style
+            x:Key="PopupButton"
+            BasedOn="{StaticResource GeneralButton}"
+            TargetType="Button" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisibilityConverter" />
+        <conv:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <DataTemplate x:Key="ProjectsSummaryTemplate">
+            <ScrollViewer Background="#212327" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!--  TextBlock for "Recent" with rounded corners  -->
+                    <Border
+                        Margin="10"
+                        Padding="10"
+                        Background="Black"
+                        CornerRadius="10">
+                        <TextBlock
+                            HorizontalAlignment="Stretch"
+                            FontSize="18"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            Text="Recent"
+                            TextAlignment="Left" />
+                    </Border>
+
+                    <!--  WrapPanel for Project Buttons  -->
+                    <WrapPanel Orientation="Horizontal">
+                        <ItemsControl ItemsSource="{Binding DataContext.AllProjects, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Margin="10"
+                                        Padding="10"
+                                        Background="#212327"
+                                        CornerRadius="10">
+                                        <Button
+                                            Width="150"
+                                            Height="100"
+                                            BorderThickness="0"
+                                            Command="{Binding DataContext.SelectProjectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding Id}"
+                                            Foreground="White">
+                                            <Button.Content>
+                                                <StackPanel>
+                                                    <TextBlock
+                                                        FontWeight="Bold"
+                                                        Foreground="Black"
+                                                        Text="{Binding Name}"
+                                                        TextAlignment="Center" />
+                                                    <TextBlock
+                                                        Margin="0,5,0,0"
+                                                        FontStyle="Italic"
+                                                        Foreground="Black"
+                                                        Text="{Binding Description}"
+                                                        TextAlignment="Center"
+                                                        TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Button.Content>
+                                        </Button>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </WrapPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </DataTemplate>
+
+        <!--  Template for Project Editor  -->
+        <DataTemplate x:Key="ProjectEditorTemplate">
+            <view:ProjectEditorView
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                EditorViewModel="{Binding EditorViewModel}" />
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Window.DataContext>
+        <viewModels:ProjectSummaryViewModel />
+    </Window.DataContext>
+
+    <Grid Margin="0,0,0,5">
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+        <TabControl
+            Grid.Row="0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Background="White"
+            ItemsSource="{Binding OpenedTabs}"
+            SelectedItem="{Binding SelectedProject, Mode=TwoWay}">
+
+            <!--  DataTemplate for Tab Headers  -->
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Margin="0,0,5,0" Text="{Binding Name}" />
+                        <Button
+                            Width="20"
+                            Height="20"
+                            Margin="5,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}">
+                            <Button.Content>
+                                <TextBlock
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="10"
+                                    Text="&#xE8BB;" />
+                            </Button.Content>
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <!--  Hide the button if Name is "Projects Summary"  -->
+                                        <DataTrigger Binding="{Binding Name}" Value="Projects Summary">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+
+            <!--  ContentTemplateSelector for Tab Content  -->
+            <TabControl.ContentTemplateSelector>
+                <local:ProjectTemplateSelector ProjectEditorTemplate="{StaticResource ProjectEditorTemplate}" ProjectsSummaryTemplate="{StaticResource ProjectsSummaryTemplate}" />
+            </TabControl.ContentTemplateSelector>
+        </TabControl>
+
+        <Button
+            Grid.Row="1"
+            Width="150"
+            Height="30"
+            Margin="20,0"
+            HorizontalAlignment="Right"
+            Command="{Binding AddProjectCommand}"
+            Visibility="{Binding CanAddProject, Converter={StaticResource BoolVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <!--  Edit Text  -->
+                <TextBlock Text="Add New Project  " />
+                <!--  Icon  -->
+                <TextBlock
+                    Margin="0,0,5,0"
+                    FontFamily="Segoe MDL2 Assets"
+                    FontSize="16"
+                    Text="&#xE710;" />
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

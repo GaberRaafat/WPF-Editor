@@ -1,0 +1,496 @@
+﻿<UserControl
+    x:Class="Editor.View.ProjectEditorView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:conv="clr-namespace:Editor.Utility"
+    xmlns:models="clr-namespace:Editor.Model"
+    xmlns:viewModels="clr-namespace:Editor.ViewModel"
+    MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=ActualHeight}"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    Background="#2e3440">
+
+    <UserControl.Resources>
+        <Style
+            x:Key="PopupButton"
+            BasedOn="{StaticResource GeneralButton}"
+            TargetType="Button" />
+        <conv:BoolToVisibilityConverter x:Key="BoolVisibilityConverter" />
+        <conv:NullVisibilityConverter x:Key="NullVisibilityConverter" />
+        <Style x:Key="EditorLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Margin" Value="10" />
+        </Style>
+        <Style x:Key="EditorTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Background" Value="#454f61" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style x:Key="EditorButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="Height" Value="35" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="BLACK" />
+            <Setter Property="Background" Value="#c5d9d4" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="5" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!--  Menu  -->
+        <Menu
+            Grid.Row="0"
+            Grid.ColumnSpan="3"
+            Background="#2e3440"
+            FontSize="15"
+            FontWeight="Bold"
+            Foreground="White">
+            <MenuItem Header="File">
+                <MenuItem
+                    Command="{Binding ImportShapesCommand}"
+                    Foreground="black"
+                    Header="Import" />
+                <MenuItem
+                    Command="{Binding ExportShapesCommand}"
+                    Foreground="black"
+                    Header="Export" />
+            </MenuItem>
+        </Menu>
+
+        <!--  Left Panel  -->
+        <Border
+            Grid.Row="1"
+            Grid.Column="0"
+            Background="#2e3440"
+            BorderBrush="LightGray">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!--  Add Shape Button  -->
+                <ToggleButton
+                    x:Name="AddButton"
+                    Grid.Row="0"
+                    Height="35"
+                    VerticalAlignment="Stretch"
+                    Background="#c5d9d4"
+                    Foreground="White"
+                    IsChecked="{Binding IsAddMenuOpened, Mode=TwoWay}"
+                    Style="{StaticResource GeneralButton}">
+
+                    <ToggleButton.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <Canvas
+                                Width="24"
+                                Height="25"
+                                VerticalAlignment="Stretch"
+                                Background="White">
+                                <Path Data="M20 14H14V20H10V14H4V10H10V4H14V10H20V14Z" Fill="DarkBlue" />
+                            </Canvas>
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontWeight="Bold"
+                                Foreground="black"
+                                Text="Add shape"
+                                TextAlignment="Center" />
+                            <Popup IsOpen="{Binding IsChecked, ElementName=AddButton}">
+                                <StackPanel Background="#2e3440">
+                                    <StackPanel.Resources>
+                                        <Style BasedOn="{StaticResource PopupButton}" TargetType="Button" />
+                                    </StackPanel.Resources>
+                                    <Button
+                                        Command="{Binding ShowRectangleWindow}"
+                                        Content="Add Rectangle"
+                                        Foreground="black" />
+                                    <Button
+                                        Command="{Binding ShowCircleWindow}"
+                                        Content="Add Circle"
+                                        Foreground="black" />
+                                    <Button
+                                        Command="{Binding ShowLineWindow}"
+                                        Content="Add Line"
+                                        Foreground="black" />
+                                    <Button
+                                        Command="{Binding ShowPolygonWindow}"
+                                        Content="Add Polygon"
+                                        Foreground="black" />
+                                </StackPanel>
+                            </Popup>
+                        </StackPanel>
+                    </ToggleButton.Content>
+                </ToggleButton>
+
+                <!--  Edit Panel  -->
+                <StackPanel
+                    Grid.Row="1"
+                    Margin="10"
+                    VerticalAlignment="Bottom"
+                    Background="#2e3440"
+                    Orientation="Vertical"
+                    Visibility="{Binding OnEditShape, Converter={StaticResource NullVisibilityConverter}}">
+
+                    <Label
+                        Content="Edit Selected Shape"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Foreground="White" />
+
+                    <ContentControl Content="{Binding OnEditShape}">
+                        <ContentControl.Resources>
+                            <!--  Template for Circle  -->
+                            <DataTemplate DataType="{x:Type models:Circle}">
+                                <StackPanel>
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Name:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Name, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Radius 1:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Radius1, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Radius 2:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Radius2, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+
+                            <!--  Template for Rectangle  -->
+                            <DataTemplate DataType="{x:Type models:Rectangle}">
+                                <StackPanel>
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Name:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Name, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Width:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Width, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Height:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Height, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+
+                            <!--  Template for Line  -->
+                            <DataTemplate DataType="{x:Type models:Line}">
+                                <StackPanel>
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Name:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Name, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * X1:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding X1, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Y1:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Y1, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * X2:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding X2, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Y2:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Y2, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+
+                            <!--  Template for Polygon  -->
+                            <DataTemplate DataType="{x:Type models:Polygon}">
+                                <StackPanel>
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Name:" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding Name, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="10" Orientation="Horizontal">
+                                        <Label Content=" * Points (e.g., X1,Y1 X2,Y2 X3,Y3):" Style="{StaticResource EditorLabelStyle}" />
+                                        <Border
+                                            Margin="10"
+                                            Background="#454f61"
+                                            CornerRadius="10">
+                                            <TextBox Style="{StaticResource EditorTextBoxStyle}" Text="{Binding PointsString, Mode=TwoWay}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ContentControl.Resources>
+                    </ContentControl>
+
+                    <!--  Close Button  -->
+                    <Button
+                        Command="{Binding SaveEditCommand}"
+                        Content="Close"
+                        Style="{StaticResource EditorButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--  Canvas  -->
+        <Canvas
+            Grid.Row="1"
+            Grid.Column="1"
+            Background="#454f61">
+            <ContentControl Content="{Binding SelectedShape}">
+                <ContentControl.Resources>
+                    <!--  Template for Circle  -->
+                    <DataTemplate DataType="{x:Type models:Circle}">
+                        <Ellipse
+                            Width="{Binding Radius1}"
+                            Height="{Binding Radius2}"
+                            Fill="LightBlue"
+                            Stroke="Black"
+                            StrokeThickness="2" />
+                    </DataTemplate>
+
+                    <!--  Template for Rectangle  -->
+                    <DataTemplate DataType="{x:Type models:Rectangle}">
+                        <Rectangle
+                            Width="{Binding Width}"
+                            Height="{Binding Height}"
+                            Fill="LightGreen"
+                            Stroke="Black"
+                            StrokeThickness="2" />
+                    </DataTemplate>
+
+                    <!--  Template for Line  -->
+                    <DataTemplate DataType="{x:Type models:Line}">
+                        <Line
+                            Stroke="Black"
+                            StrokeThickness="2"
+                            X1="{Binding X1}"
+                            X2="{Binding X2}"
+                            Y1="{Binding Y1}"
+                            Y2="{Binding Y2}" />
+                    </DataTemplate>
+
+                    <!--  Template for Polygon  -->
+                    <DataTemplate DataType="{x:Type models:Polygon}">
+                        <Polygon
+                            Fill="LightCoral"
+                            Points="{Binding Points}"
+                            Stroke="Black"
+                            StrokeThickness="2" />
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+        </Canvas>
+
+        <!--  Right Panel  -->
+        <Border
+            Grid.Row="1"
+            Grid.Column="2"
+            Background="#2e3440"
+            BorderBrush="LightGray"
+            BorderThickness="1">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  ListBox for Shapes  -->
+                <ListBox
+                    Grid.Row="0"
+                    VerticalAlignment="Stretch"
+                    Background="#2e3440"
+                    BorderThickness="0"
+                    Foreground="White"
+                    ItemsSource="{Binding Shapes}"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    SelectedItem="{Binding SelectedShape, Mode=TwoWay}">
+                    <ListBox.Resources>
+                        <!--  Template for Circle  -->
+                        <DataTemplate DataType="{x:Type models:Circle}">
+                            <StackPanel>
+                                <TextBlock FontWeight="Bold" Text="Name:" />
+                                <TextBlock Margin="10,0" Text="{Binding Name}" />
+
+                                <TextBlock FontWeight="Bold" Text="Radius 1:" />
+                                <TextBlock Margin="10,0" Text="{Binding Radius1}" />
+
+                                <TextBlock FontWeight="Bold" Text="Radius 2:" />
+                                <TextBlock Margin="10,0" Text="{Binding Radius2}" />
+
+                                <Separator Margin="0,5" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </DataTemplate>
+
+                        <!--  Template for Rectangle  -->
+                        <DataTemplate DataType="{x:Type models:Rectangle}">
+                            <StackPanel>
+                                <TextBlock FontWeight="Bold" Text="Name:" />
+                                <TextBlock Margin="10,0" Text="{Binding Name}" />
+
+                                <TextBlock FontWeight="Bold" Text="Width:" />
+                                <TextBlock Margin="10,0" Text="{Binding Width}" />
+
+                                <TextBlock FontWeight="Bold" Text="Height:" />
+                                <TextBlock Margin="10,0" Text="{Binding Height}" />
+
+                                <Separator Margin="0,5" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </DataTemplate>
+
+                        <!--  Template for Line  -->
+                        <DataTemplate DataType="{x:Type models:Line}">
+                            <StackPanel>
+                                <TextBlock FontWeight="Bold" Text="Name:" />
+                                <TextBlock Margin="10,0" Text="{Binding Name}" />
+
+                                <TextBlock FontWeight="Bold" Text="X1:" />
+                                <TextBlock Margin="10,0" Text="{Binding X1}" />
+
+                                <TextBlock FontWeight="Bold" Text="Y1:" />
+                                <TextBlock Margin="10,0" Text="{Binding Y1}" />
+
+                                <TextBlock FontWeight="Bold" Text="X2:" />
+                                <TextBlock Margin="10,0" Text="{Binding X2}" />
+
+                                <TextBlock FontWeight="Bold" Text="Y2:" />
+                                <TextBlock Margin="10,0" Text="{Binding Y2}" />
+
+                                <Separator Margin="0,5" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </DataTemplate>
+
+                        <!--  Template for Polygon  -->
+                        <DataTemplate DataType="{x:Type models:Polygon}">
+                            <StackPanel>
+                                <TextBlock FontWeight="Bold" Text="Name:" />
+                                <TextBlock Margin="10,0" Text="{Binding Name}" />
+
+                                <TextBlock FontWeight="Bold" Text="Points:" />
+                                <TextBlock Margin="10,0" Text="{Binding Points}" />
+
+                                <Separator Margin="0,5" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.Resources>
+                </ListBox>
+
+                <!--  Edit and Delete Buttons  -->
+                <StackPanel
+                    Grid.Row="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Orientation="Horizontal">
+                    <Button Command="{Binding EditSelectedCommand}" Style="{StaticResource EditorButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Edit  " />
+                            <TextBlock
+                                Margin="0,0,5,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xEB7E;" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding DeleteSelectedCommand}" Style="{StaticResource EditorButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Delete  " />
+                            <TextBlock
+                                Margin="0,0,5,0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                Text="&#xE74D;" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
